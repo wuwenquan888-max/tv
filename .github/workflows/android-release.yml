@@ -54,19 +54,23 @@ jobs:
       - name: Run configuration checks
         run: bash test/ci_config_test.sh && bash test/feature_config_test.sh
 
-      # ✨ 动态替换应用桌面名称与首页顶部名称（通过 -not -path 锁死排除 douban_service.dart）
+            # ✨ 完美修复：不再使用全局扫描，仅对特定界面文件进行精准标题替换
       - name: Dynamically modify App Name and Title
         run: |
           echo "正在动态修改桌面图标名称..."
           sed -i 's/android:label="[^"]*"/android:label="咔蔓TV"/g' android/app/src/main/AndroidManifest.xml
           sed -i "s/android:label='[^']*'/android:label='咔蔓TV'/g" android/app/src/main/AndroidManifest.xml
           
-          echo "正在动态修改首页顶部标题（安全绕过豆瓣服务）..."
-          find lib/ -type f -name "*.dart" -not -path "*douban_service.dart" -exec sed -i "s/'[Tt][Vv]'/'咔蔓TV'/g" {} +
-          find lib/ -type f -name "*.dart" -not -path "*douban_service.dart" -exec sed -i 's/"[Tt][Vv]"/"咔蔓 TV"/g' {} +
+          echo "正在精准修改首页标题..."
+          # 🎯 明确指定修改 home_page.dart 文件，其他网络和数据文件不受任何波及
+          if [ -f "lib/pages/home_page.dart" ]; then
+            sed -i "s/'[Tt][Vv]'/'咔蔓TV'/g" lib/pages/home_page.dart
+            sed -i 's/"[Tt][Vv]"/"咔蔓TV"/g' lib/pages/home_page.dart
+          fi
           
           echo "修改完成，打印清单差异："
           git diff android/app/src/main/AndroidManifest.xml || true
+
 
       - name: Restore release keystore
         env:
