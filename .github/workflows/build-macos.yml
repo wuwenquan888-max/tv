@@ -36,19 +36,39 @@ jobs:
       - name: Run configuration checks
         run: bash test/ci_config_test.sh && bash test/feature_config_test.sh
 
-      # 使用 --no-codesign 参数直接跳过所有苹果证书校验
-          # 使用控制 Xcode 的参数来跳过签名
-           # 通过注入编译参数 CODE_SIGNING_ALLOWED=NO 彻底关闭底层 Xcode 的签名校验
+      # 通过在命令前注入系统环境变量，彻底关闭底层 Xcode 的签名校验
       - name: Build macOS App
-        run: flutter build macos --release --config-only && xcodebuild -workspace android/../macos/Runner.xcworkspace -scheme Runner -configuration Release CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGNING_IDENTITY="" build
+        run: |
+          export CODE_SIGNING_ALLOWED=NO
+          export CODE_SIGNING_REQUIRED=NO
+          export CODE_SIGNING_IDENTITY=""
+          flutter build macos --release
 
-      # 将生成的 .app 文件夹打包压缩成 .zip 格式
+      # 动态寻找 .app 文件的实际输出位置并打包成 ZIP，避免因路径不匹配报错
       - name: Package macOS App
         run: |
           mkdir -p build/macos-release
-          cd build/macos/Build/Products/Release
-          zip -r ../../../../macos-release/tv-macos-app.zip *.app
+          
+          # 自动在 build 目录下搜寻生成的 .app 文件夹
+          APP_PATH=$(find build/macos -name "*.app" -type d -maxdepth 5 | head -n 1)
+          if [ -z "$APP_PATH" ]; then
+            echo "Error: Could not find any compiled .app bundle!" >&2
+            exit 1
+          fi
+          
+          APP_PARENT=$(dirname "$APP_PATH")
+          APP_NAME=$(basename "$APP_PATH")
+          
+          echo "Found $APP_NAME inside $APP_PARENT. Starting packaging..."
+          
+          # 计算回退到项目根目录相对路径的层级（通常是 3 或 4 层）
+          # 直接使用绝对路径输出到最终目录，最安全稳妥
+          TARGET_ZIP="$(pwd)/build/macos-release/tv-macos-app.zip"
+          
+          cd "$APP_PARENT"
+          zip -r "$TARGET_ZIP" "$APP_NAME"
           cd -
+          
           ls -lh build/macos-release
 
       - name: Upload macOS Artifact
