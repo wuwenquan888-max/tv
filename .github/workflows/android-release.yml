@@ -59,13 +59,13 @@ jobs:
       - name: Dynamically modify App Name and Title
         run: |
           echo "正在动态修改桌面图标名称..."
-          sed -i 's/android:label="[^"]*"/android:label="咔蔓 tv"/g' android/app/src/main/AndroidManifest.xml
-          sed -i "s/android:label='[^']*'/android:label='咔蔓 tv'/g" android/app/src/main/AndroidManifest.xml
+          sed -i 's/android:label="[^"]*"/android:label="咔蔓TV"/g' android/app/src/main/AndroidManifest.xml
+          sed -i "s/android:label='[^']*'/android:label='咔蔓TV'/g" android/app/src/main/AndroidManifest.xml
           
           echo "正在动态修改首页顶部标题..."
           # 同时检索并替换 'TV'、'tv'、'Tv' 及其双引号形式，确保全方位覆盖
-          find lib/ -type f -name "*.dart" -exec sed -i "s/'[Tt][Vv]'/'咔蔓 tv'/g" {} +
-          find lib/ -type f -name "*.dart" -exec sed -i 's/"[Tt][Vv]"/"咔蔓 tv"/g' {} +
+          find lib/ -type f -name "*.dart" -exec sed -i "s/'[Tt][Vv]'/'咔蔓TV'/g" {} +
+          find lib/ -type f -name "*.dart" -exec sed -i 's/"[Tt][Vv]"/"咔蔓TV"/g' {} +
           
           echo "修改完成，打印清单差异："
           git diff android/app/src/main/AndroidManifest.xml || true
