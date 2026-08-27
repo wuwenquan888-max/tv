@@ -1,6 +1,6 @@
 {
-    "name": "tv",
-    "short_name": "tv",
+    "name": "咔蔓tv",
+    "short_name": "咔蔓tv",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#hexcode",
