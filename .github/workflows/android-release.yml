@@ -35,7 +35,8 @@ jobs:
           channel: stable
           cache: true
 
-       - name: Install pinned Android NDK
+      # 🛠️ 已修复：合并了管道命令，删除了导致 Bash 语法错误的意外换行符
+      - name: Install pinned Android NDK
         run: |
           ndk_version="$(grep -oE 'ndkVersion = "[^"]+"' android/app/build.gradle.kts | head -1 | cut -d'"' -f2)"
           echo "Installing NDK $ndk_version"
@@ -105,7 +106,7 @@ jobs:
             build/android-release/tv-android-armeabi-v7a.apk
           ls -lh build/android-release
 
-      # 🛠️ 优化验证步骤：去掉硬编码的包名限制，避免包名更改后构建死锁
+      # 🛠️ 验证步骤：动态读取并打印实际包名，避免了硬编码限制
       - name: Verify APK identity and signature
         run: |
           build_tools="$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)"
@@ -123,7 +124,7 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
-      # 发布到 GitHub Release（已同步更新发布说明名称）
+      # 发布到 GitHub Release（显示名称已同步）
       - name: Publish APKs to GitHub Release
         uses: softprops/action-gh-release@v2
         with:
