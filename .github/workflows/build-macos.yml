@@ -38,8 +38,9 @@ jobs:
 
       # 使用 --no-codesign 参数直接跳过所有苹果证书校验
           # 使用控制 Xcode 的参数来跳过签名
+           # 通过注入编译参数 CODE_SIGNING_ALLOWED=NO 彻底关闭底层 Xcode 的签名校验
       - name: Build macOS App
-        run: flutter build macos --release --no-codesign-not-needed
+        run: flutter build macos --release --config-only && xcodebuild -workspace android/../macos/Runner.xcworkspace -scheme Runner -configuration Release CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGNING_IDENTITY="" build
 
       # 将生成的 .app 文件夹打包压缩成 .zip 格式
       - name: Package macOS App
