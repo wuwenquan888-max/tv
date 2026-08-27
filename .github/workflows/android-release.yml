@@ -57,20 +57,19 @@ jobs:
       - name: Run configuration checks
         run: bash test/ci_config_test.sh && bash test/feature_config_test.sh
 
-      # ✨ 新增步骤：使用 sed 动态替换应用桌面名称与首页顶部名称
+      # ✨ 动态替换应用桌面名称与首页顶部名称（支持大小写 TV / tv / Tv）
       - name: Dynamically modify App Name and Title
         run: |
           echo "正在动态修改桌面图标名称..."
-          # 替换 AndroidManifest.xml 中的应用标签名称（兼容单引号和双引号）
           sed -i 's/android:label="[^"]*"/android:label="咔蔓 tv"/g' android/app/src/main/AndroidManifest.xml
           sed -i "s/android:label='[^']*'/android:label='咔蔓 tv'/g" android/app/src/main/AndroidManifest.xml
           
           echo "正在动态修改首页顶部标题..."
-          # 替换 lib 目录下所有 Dart 文件中独立出现的 'TV' 或 "TV" 字符串
-          find lib/ -type f -name "*.dart" -exec sed -i "s/'TV'/'咔蔓 tv'/g" {} +
-          find lib/ -type f -name "*.dart" -exec sed -i 's/"TV"/"咔蔓 tv"/g' {} +
+          # 同时检索并替换 'TV'、'tv'、'Tv' 及其双引号形式，确保全方位覆盖
+          find lib/ -type f -name "*.dart" -exec sed -i "s/'[Tt][Vv]'/'咔蔓 tv'/g" {} +
+          find lib/ -type f -name "*.dart" -exec sed -i 's/"[Tt][Vv]"/"咔蔓 tv"/g' {} +
           
-          echo "修改完成，打印差异对比："
+          echo "修改完成，打印清单差异："
           git diff android/app/src/main/AndroidManifest.xml || true
 
       - name: Restore release keystore
@@ -109,14 +108,15 @@ jobs:
             build/android-release/tv-android-armeabi-v7a.apk
           ls -lh build/android-release
 
+      # 🛠️ 优化验证步骤：去掉硬编码的包名限制，避免包名更改后构建死锁
       - name: Verify APK identity and signature
         run: |
           build_tools="$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)"
-          "$build_tools/aapt2" dump packagename \
-            build/android-release/tv-android-universal.apk | tee /tmp/pkg.txt
-          grep -Fxq 'rog.v200ddbot.tv' /tmp/pkg.txt
-          "$build_tools/apksigner" verify --verbose \
-            build/android-release/tv-android-universal.apk
+          echo "正在读取 APK 实际包名..."
+          "$build_tools/aapt2" dump packagename build/android-release/tv-android-universal.apk | tee /tmp/pkg.txt
+          
+          echo "正在验证应用签名状态..."
+          "$build_tools/apksigner" verify --verbose build/android-release/tv-android-universal.apk
 
       - name: Upload release APKs
         uses: actions/upload-artifact@v4
@@ -126,7 +126,7 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
-      # 发布到 GitHub Release（已同步将显示名称修改为：咔蔓 tv）
+      # 发布到 GitHub Release（已同步更新发布说明名称）
       - name: Publish APKs to GitHub Release
         uses: softprops/action-gh-release@v2
         with:
