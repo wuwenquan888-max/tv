@@ -1,0 +1,82 @@
+name: Build macOS App (No Codesign)
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: macos-nocodesign-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-macos:
+    name: Build unsigned release macOS app
+    # 构建 macOS 必须使用 macos 运行器
+    runs-on: macos-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Resolve Flutter dependencies
+        run: flutter pub get
+
+      - name: Run configuration checks
+        run: bash test/ci_config_test.sh && bash test/feature_config_test.sh
+
+      # 使用 --no-codesign 参数直接跳过所有苹果证书校验
+      - name: Build macOS App
+        run: flutter build macos --release --no-codesign
+
+      # 将生成的 .app 文件夹打包压缩成 .zip 格式
+      - name: Package macOS App
+        run: |
+          mkdir -p build/macos-release
+          cd build/macos/Build/Products/Release
+          zip -r ../../../../macos-release/tv-macos-app.zip *.app
+          cd -
+          ls -lh build/macos-release
+
+      - name: Upload macOS Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: tv-macos-app
+          path: build/macos-release/*.zip
+          if-no-files-found: error
+          retention-days: 14
+
+      # 自动发布到 GitHub Release 页面
+      - name: Publish macOS App to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: macos-unsigned-${{ github.run_number }}
+          name: "tv macOS 免签名安装包 #${{ github.run_number }}"
+          body: |
+            已编译的 macOS 无签名（Unsigned）压缩包。
+
+            ### 💻 安装与运行说明：
+            1. 下载并解压 `tv-macos-app.zip`。
+            2. 将解压出来的 `.app` 文件拖入你的 **应用程序 (Applications)** 文件夹。
+            3. **首次打开由于没有证书签名，系统会拦截。请通过以下方式打开：**
+               - 在应用图标上 **右键（或双指双击）选择「打开」**。
+               - 在弹出的警告窗口中，再次点击 **「打开」**。
+               - 或者前往「系统设置 -> 隐私与安全性」，滚动到下方点击 **「仍要打开」**。
+
+            ---
+            - 提交：${{ github.sha }}
+            - 构建：Actions run #${{ github.run_number }}
+          files: build/macos-release/*.zip
+          draft: false
+          prerelease: false
