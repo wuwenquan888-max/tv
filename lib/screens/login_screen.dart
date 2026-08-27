@@ -198,7 +198,7 @@ class _LoginScreenState extends State<LoginScreen> {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Text(
-          'tv',
+          '咔蔓TV',
           style: FontUtils.sourceCodePro(
             fontSize: 42,
             fontWeight: FontWeight.w400,
