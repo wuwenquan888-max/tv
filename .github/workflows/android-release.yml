@@ -35,14 +35,11 @@ jobs:
           channel: stable
           cache: true
 
-      - name: Install pinned Android NDK
+       - name: Install pinned Android NDK
         run: |
-          ndk_version="$(grep -oE 'ndkVersion = "[^"]+"' android/app/build.gradle.kts \
-
-            | head -1 | cut -d'"' -f2)"
+          ndk_version="$(grep -oE 'ndkVersion = "[^"]+"' android/app/build.gradle.kts | head -1 | cut -d'"' -f2)"
           echo "Installing NDK $ndk_version"
-          sdkmanager="$(find "$ANDROID_HOME/cmdline-tools" -name sdkmanager -type f \
-            2>/dev/null | sort | tail -1)"
+          sdkmanager="$(find "$ANDROID_HOME/cmdline-tools" -name sdkmanager -type f 2>/dev/null | sort | tail -1)"
           if [ -z "$sdkmanager" ]; then
             echo "sdkmanager not found under $ANDROID_HOME" >&2
             exit 1
